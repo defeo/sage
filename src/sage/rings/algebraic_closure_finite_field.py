@@ -1013,6 +1013,9 @@ class AlgebraicClosureFiniteFieldFactory(UniqueFactory):
         base_ring, name, category, implementation = key
         if implementation == 'pseudo_conway':
             return AlgebraicClosureFiniteField_pseudo_conway(base_ring, name, category, **kwds)
+        elif implementation == 'primary_decomposition':
+            from algebraic_closure_finite_field_primary_decomp import AlgebraicClosureFiniteField_primary_decomp
+            return AlgebraicClosureFiniteField_primary_decomp(base_ring, name, category, **kwds)
         else:
             raise ValueError('unknown implementation for algebraic closure of finite field: %s'
                              % implementation)

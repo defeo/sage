@@ -988,7 +988,7 @@ cdef class FiniteField(Field):
                 raise ValueError, "name must be None, a string or a dictionary indexed by divisors of the degree"
             return [self.subfields(m, name=name[m])[0] for m in divisors]
 
-    def algebraic_closure(self, name='z'):
+    def algebraic_closure(self, name='z', implementation=None):
         """
         Return an algebraic closure of ``self``.
 
@@ -1018,7 +1018,7 @@ cdef class FiniteField(Field):
 
         """
         from sage.rings.algebraic_closure_finite_field import AlgebraicClosureFiniteField
-        return AlgebraicClosureFiniteField(self, name)
+        return AlgebraicClosureFiniteField(self, name, implementation=implementation)
 
     @cached_method
     def is_conway(self):

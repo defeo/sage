@@ -1446,6 +1446,9 @@ ext_modules = [
     ##
     ################################
 
+    Extension('sage.rings.algebraic_closure_finite_field_primary_decomp',
+              sources = ["sage/rings/algebraic_closure_finite_field_primary_decomp.pyx"]),
+
     Extension('sage.rings.bernmm',
               sources = ['sage/rings/bernmm.pyx',
                          'sage/rings/bernmm/bern_modp.cpp',
