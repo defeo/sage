@@ -5,7 +5,7 @@
 /*
   res must not alias any x[i]
 */
-void _compositum_iso_from_mono(mp_srcptr res, mp_srcptr* x,
+void _compositum_iso_from_mono(mp_ptr res, mp_srcptr* x,
 			       const nmod_poly_t P, 
 			       const nmod_poly_t Q, mp_srcptr Qnewton) {
   slong
@@ -19,10 +19,12 @@ void _compositum_iso_from_mono(mp_srcptr res, mp_srcptr* x,
   mp_ptr tmp = _nmod_vec_init(M);
   _nmod_vec_zero(res, M);
   for (n--; n >= 0; n--) {
-    nmod_poly_trem(tmp, x[n], P, M);
-    k = M;
-    __COEFF_PROD(tmp, tmp, y+n, P->mod, k);
-    _nmod_vec_add(res, res, tmp, M, P->mod);
+    if (x[n]) {
+      nmod_poly_trem(tmp, x[n], P, M);
+      k = M;
+      __COEFF_PROD(tmp, tmp, y+n, P->mod, k);
+      _nmod_vec_add(res, res, tmp, M, P->mod);
+    }
   }
   _nmod_vec_clear(y);
   _nmod_vec_clear(tmp);
@@ -31,7 +33,7 @@ void _compositum_iso_from_mono(mp_srcptr res, mp_srcptr* x,
 /*
   x must not alias any res[i]
 */
-void _compositum_iso_to_dual(nmod_poly_t* res, const nmod_poly_t P,
+void _compositum_iso_to_dual(nmod_poly_struct** res, const nmod_poly_t P,
 			     const nmod_poly_t x, const nmod_poly_t PQ,
 			     const nmod_poly_t Q, mp_srcptr Qnewton) {
   slong
@@ -55,14 +57,14 @@ void _compositum_iso_to_dual(nmod_poly_t* res, const nmod_poly_t P,
 /*
   x must not alias any res[i]
 */
-void _compositum_iso_to_mono(nmod_poly_t* res, const nmod_poly_t P,
+void _compositum_iso_to_mono(nmod_poly_struct** res, const nmod_poly_t P,
 			     const nmod_poly_t x, const nmod_poly_t PQ,
 			     const nmod_poly_t Q) {
   slong
     k,
     n = nmod_poly_degree(Q),
     M = nmod_poly_degree(PQ);
-  mp_ptr y = _nmod_vec_init(M+n-1);
+  mp_ptr y = _nmod_vec_init(M);
   _nmod_vec_zero(y, n);
   for (n--; n >= 0; n--) {
     y[n] = WORD(1);

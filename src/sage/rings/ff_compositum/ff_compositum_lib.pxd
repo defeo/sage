@@ -1,9 +1,10 @@
 from sage.libs.flint.nmod_poly cimport *
 
 cdef extern from "flint/nmod_poly.h":
-    ctypedef int slong
+    ctypedef long slong
     void nmod_poly_invmod(nmod_poly_t res, nmod_poly_t x, nmod_poly_t m)
     void nmod_poly_rem(nmod_poly_t res, nmod_poly_t x, nmod_poly_t m)
+    void _nmod_poly_normalise(nmod_poly_t x)
     void _nmod_poly_add(mp_ptr res, mp_ptr poly1, slong len1, mp_ptr poly2, slong len2, nmod_t mod)
     void _nmod_poly_sub(mp_ptr res, mp_ptr poly1, slong len1, mp_ptr poly2, slong len2, nmod_t mod)
 
@@ -28,13 +29,13 @@ cdef extern from "compositum.h":
     void _compositum_project(nmod_poly_t res, const nmod_poly_t P,
                              const nmod_poly_t x,
                              mp_srcptr y, const nmod_poly_t Q)
-    void _compositum_iso_from_mono(mp_srcptr res, mp_srcptr* x,
+    void _compositum_iso_from_mono(mp_ptr res, mp_srcptr* x,
                                    const nmod_poly_t P, 
                                    const nmod_poly_t Q, mp_srcptr Qnewton)
-    void _compositum_iso_to_dual(nmod_poly_t* res, const nmod_poly_t P,
+    void _compositum_iso_to_dual(nmod_poly_struct** res, const nmod_poly_t P,
                                  const nmod_poly_t x, const nmod_poly_t PQ,
                                  const nmod_poly_t Q, mp_srcptr Qnewton)
-    void _compositum_iso_to_mono(nmod_poly_t* res, const nmod_poly_t P,
+    void _compositum_iso_to_mono(nmod_poly_struct** res, const nmod_poly_t P,
                                  const nmod_poly_t x, const nmod_poly_t PQ,
                                  const nmod_poly_t Q)
     void _compositum_isomorphism_2(nmod_poly_t G, mp_srcptr F, 
