@@ -92,25 +92,37 @@ cdef class FFDesc(SageObject):
     cpdef FFElt mono_basis_element(self, int i):
         cdef FFElt res = FFElt(self)
         nmod_poly_set_coeff_ui(res.mono, i, 1)
-        return res    
+        return res
 
     cpdef FFElt dual_basis_element(self, int i):
         cdef FFElt res = FFElt(self)
-        set_coeffs(res.dual, [], self.degree)
         nmod_poly_set_coeff_ui(res.dual, i, 1)
         return res
 
     cpdef FFElt seqelt_mono(self, elts, FFDesc Q):
         cdef FFElt res = FFElt(self)
         cdef FFDesc P = (<FFElt>elts[0]).ff
-        cdef mp_srcptr* coeffs = []
+        cdef mp_srcptr* coeffs = <mp_srcptr*>malloc(Q.degree*sizeof(mp_srcptr))
         for i in range(Q.degree):
             coeffs[i] = (<FFElt>elts[i]).get_dual().coeffs
-        nmod_poly_fit_length(res.dual, self.degree)
         _compositum_iso_from_mono(res.dual.coeffs, coeffs, P.M, Q.M, Q.Mt().coeffs)
         res.dual.length = self.degree
+        free(coeffs)
         return res
                                   
+    cpdef FFElt seqelt_mono_matrix(self, elts, FFDesc Q):
+        cdef FFElt res = FFElt(self)
+        cdef FFDesc P = (<FFElt>elts[0]).ff
+        cdef mp_srcptr* coeffs = <mp_srcptr*>malloc(Q.degree*sizeof(mp_srcptr))
+        for i in range(Q.degree):
+            coeffs[i] = (<FFElt>elts[i]).get_mono().coeffs
+        _compositum_iso_matrix_from_mono(res.dual.coeffs, coeffs,
+                                         P.M, P.Mt().coeffs,
+                                         Q.M, Q.Mt().coeffs)
+        res.dual.length = self.degree
+        free(coeffs)
+        return res
+
     cpdef FFElt seqelt_mono_python(self, elts, FFDesc Q):
         cdef FFElt res = FFElt(self)
         for i in range(Q.degree):
@@ -125,7 +137,7 @@ cdef class FFDesc(SageObject):
         cdef mp_limb_t* tmp
         for j in range(n):
             if elts[j]:
-                tmp = (<FFElt>elts[j]).get_dual().coeffs
+                tmp = (<FFElt>elts[j]).get_mono().coeffs
             else:
                 tmp = NULL
             for i in range(m):
@@ -160,6 +172,10 @@ cdef class FFElt(SageObject):
     def __cinit__(self, FFDesc ff, *args, **kwds):
         nmod_poly_init(self.mono, ff.M.mod.n)
         nmod_poly_init(self.dual, ff.M.mod.n)
+        set_coeffs(self.mono, [], ff.degree)
+        set_coeffs(self.dual, [], ff.degree)
+        nmod_poly_zero(self.mono)
+        nmod_poly_zero(self.dual)
     
     def __init__(self, FFDesc ff, coeffs=None, dual_coeffs=None):
         self.ff = ff
@@ -189,7 +205,6 @@ cdef class FFElt(SageObject):
     
     cdef nmod_poly_struct* get_dual(self):
         if not self.dual.length and self.mono.length:
-            nmod_poly_fit_length(self.dual, self.ff.degree)
             nmod_poly_tmulmod(self.dual.coeffs, self.ff.Mt().coeffs,
                               self.mono, self.ff.M, self.ff.S())
             self.dual.length = self.ff.degree
@@ -216,7 +231,6 @@ cdef class FFElt(SageObject):
         if a.mono.length and b.mono.length:
             nmod_poly_add(res.mono, a.mono, b.mono)
         if a.dual.length and b.dual.length:
-            nmod_poly_fit_length(res.dual, a.ff.degree)
             _nmod_poly_add(res.dual.coeffs, a.dual.coeffs, a.ff.degree,
                            b.dual.coeffs, a.ff.degree, a.ff.M.mod)
             res.dual.length = a.ff.degree
@@ -231,7 +245,6 @@ cdef class FFElt(SageObject):
         if a.mono.length and b.mono.length:
             nmod_poly_sub(res.mono, a.mono, b.mono)
         if a.dual.length and b.dual.length:
-            nmod_poly_fit_length(res.dual, a.ff.degree)
             _nmod_poly_sub(res.dual.coeffs, a.dual.coeffs, a.ff.degree,
                            b.dual.coeffs, a.ff.degree, a.ff.M.mod)
             res.dual.length = a.ff.degree
@@ -244,7 +257,6 @@ cdef class FFElt(SageObject):
         if a.mono.length and not b.mono.length:
             a, b = b, a
         if not a.mono.length and b.mono.length:
-            nmod_poly_fit_length(res.dual, a.ff.degree)
             nmod_poly_tmulmod(res.dual.coeffs, a.dual.coeffs, b.mono, a.ff.M, a.ff.S())
             res.dual.length = a.ff.degree
             nmod_poly_zero(res.mono)
@@ -269,7 +281,6 @@ cdef class FFElt(SageObject):
             else:
                 raise ValueError
 
-            nmod_poly_fit_length(res.dual, R.degree)
             _compositum_embed(res.dual.coeffs, 
                               a.get_dual().coeffs, a.ff.M,
                               b.get_dual().coeffs, b.ff.M,
@@ -303,12 +314,13 @@ cdef class FFElt(SageObject):
         Returns the list of coefficients of self as an element on the
         monomial basis of Q
         '''
-        cdef nmod_poly_struct** coeffs = []
+        cdef nmod_poly_struct** coeffs = <nmod_poly_struct**>malloc(Q.degree*sizeof(void*))
         res = [FFElt(P) for i in range(Q.degree)]
         if self:
             for i in range(Q.degree):
                 coeffs[i] = <nmod_poly_struct*>(<FFElt>res[i]).mono
             _compositum_iso_to_mono(coeffs, P.M, self.get_mono(), self.ff.M, Q.M)
+        free(coeffs)
         return res
 
     cpdef eltseq_mono_python(self, FFDesc P, FFDesc Q):
@@ -320,19 +332,17 @@ cdef class FFElt(SageObject):
             res.append(self.project(P, b))
         return res
 
-    cpdef eltseq_mono_BSGS(self, FFDesc P, FFDesc Q):
+    cpdef eltseq_dual_BSGS(self, FFDesc P, FFDesc Q):
         cdef int m = P.degree, n = Q.degree
         cdef mp_limb_t* coeffs = <mp_limb_t*>malloc(m*n*sizeof(mp_limb_t))
-        _compositum_isomorphism_inverse_2(coeffs, self.get_mono(),
-                                          P.M, P.Mt().coeffs,
-                                          Q.M, Q.Mt().coeffs,
-                                          self.ff.M, self.ff.Mt().coeffs,
-                                          self.ff.iM(), self.ff.S())
+        _compositum_tisomorphism_2(coeffs, self.get_dual().coeffs,
+                                   P.M, P.Mt().coeffs,
+                                   Q.M, Q.Mt().coeffs,
+                                   self.ff.M, self.ff.iM(), self.ff.S())
         res = [FFElt(P) for i in range(n)]
         cdef nmod_poly_struct* tmp
         for j in range(n):
-            tmp = <nmod_poly_struct*>(<FFElt>res[i]).mono
-            nmod_poly_fit_length(tmp, m)
+            tmp = <nmod_poly_struct*>(<FFElt>res[j]).dual
             for i in range(m):
                 tmp.coeffs[i] = coeffs[i*n + j]
             tmp.length = m
@@ -345,12 +355,30 @@ cdef class FFElt(SageObject):
         Returns the list of coefficients of self as an element on the
         monomial basis of Q
         '''
-        cdef nmod_poly_struct** coeffs = []
+        cdef nmod_poly_struct** coeffs = <nmod_poly_struct**>malloc(Q.degree*sizeof(void*))
         res = [FFElt(P) for i in range(Q.degree)]
         if self:
             for i in range(Q.degree):
                 coeffs[i] = <nmod_poly_struct*>(<FFElt>res[i]).mono
             _compositum_iso_to_dual(coeffs, P.M, self.get_mono(), self.ff.M, Q.M, Q.Mt().coeffs)
+        free(coeffs)
+        return res
+
+    cpdef eltseq_dual_matrix(self, FFDesc P, FFDesc Q):
+        '''
+        Returns the list of coefficients of self as an element on the
+        monomial basis of Q
+        '''
+        cdef nmod_poly_struct** coeffs = <nmod_poly_struct**>malloc(Q.degree*sizeof(void*))
+        res = [FFElt(P) for i in range(Q.degree)]
+        if self:
+            for i in range(Q.degree):
+                coeffs[i] = <nmod_poly_struct*>(<FFElt>res[i]).dual
+                (<FFElt>res[i]).dual.length = P.degree
+            _compositum_iso_matrix_to_dual(coeffs, self.get_mono().coeffs,
+                                           P.M, P.Mt().coeffs,
+                                           Q.M, Q.Mt().coeffs)
+        free(coeffs)
         return res
 
     cpdef eltseq_dual_python(self, FFDesc P, FFDesc Q):
@@ -362,7 +390,6 @@ cdef class FFElt(SageObject):
             res.append(self.project(P, b))
         return res
     
-
     def __repr__(self):
         return 'FFElt\n  mono: %s\n  dual: %s' % (print_coeffs(self.mono),
                                                   print_coeffs(self.dual))

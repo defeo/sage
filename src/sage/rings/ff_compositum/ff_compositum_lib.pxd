@@ -51,5 +51,10 @@ cdef extern from "compositum.h":
                                            const nmod_poly_t Q, mp_srcptr Qt,
                                            const nmod_poly_t R, mp_srcptr Rt,
                                            const nmod_poly_t iR, const nmod_poly_t SR)
-    cdef void _compositum_iP(nmod_poly_t res, const nmod_poly_t P)
-
+    void _compositum_iso_matrix_from_mono(mp_ptr res, mp_srcptr* z,
+                                          const nmod_poly_t P, mp_srcptr Pnewton,
+                                          const nmod_poly_t Q, mp_srcptr Qnewton)
+    void _compositum_iso_matrix_to_dual(nmod_poly_struct** res, mp_srcptr z,
+                                        const nmod_poly_t P, mp_srcptr Pnewton,
+                                        const nmod_poly_t Q, mp_srcptr Qnewton)
+    void _compositum_iP(nmod_poly_t res, const nmod_poly_t P)
