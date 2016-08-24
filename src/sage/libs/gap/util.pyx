@@ -10,12 +10,11 @@ Utility functions for libGAP
 #   the License, or (at your option) any later version.
 #                   http://www.gnu.org/licenses/
 ###############################################################################
+from __future__ import print_function
 
 from sage.env import SAGE_LOCAL
-from sage.misc.misc import is_64_bit
 from libc.stdint cimport uintptr_t
 from element cimport *
-
 
 
 ############################################################################
@@ -161,7 +160,7 @@ def gap_root():
     gapdir = os.path.join(SAGE_LOCAL, 'gap', 'latest')
     if os.path.exists(gapdir):
         return gapdir
-    print 'The gap-4.5.5.spkg (or later) seems to be not installed!'
+    print('The gap-4.5.5.spkg (or later) seems to be not installed!')
     gap_sh = open(os.path.join(SAGE_LOCAL, 'bin', 'gap')).read().splitlines()
     gapdir = filter(lambda dir:dir.strip().startswith('GAP_DIR'), gap_sh)[0]
     gapdir = gapdir.split('"')[1]
@@ -282,7 +281,7 @@ cdef libGAP_Obj gap_eval(str gap_string) except? NULL:
         libgap_start_interaction(cmd)
         try:
             sig_on()
-            status = libGAP_ReadEvalCommand(libGAP_BottomLVars)
+            status = libGAP_ReadEvalCommand(libGAP_BottomLVars, NULL)
             if status != libGAP_STATUS_END:
                 libgap_call_error_handler()
             sig_off()
@@ -332,7 +331,7 @@ cdef void hold_reference(libGAP_Obj obj):
 ### Error handler ##########################################################
 ############################################################################
 
-include 'sage/ext/interrupt.pxi'
+include "cysignals/signals.pxi"
 from cpython.exc cimport PyErr_SetObject
 
 cdef void error_handler(char* msg):
@@ -364,7 +363,7 @@ cdef inline void DEBUG_CHECK(libGAP_Obj obj):
     libGAP_CheckMasterPointers()
     libgap_exit()
     if obj == NULL:
-        print 'DEBUG_CHECK: Null pointer!'
+        print('DEBUG_CHECK: Null pointer!')
 
 
 
@@ -466,7 +465,7 @@ def command(command_string):
         libgap_start_interaction(cmd)
         try:
             sig_on()
-            status = libGAP_ReadEvalCommand(libGAP_BottomLVars)
+            status = libGAP_ReadEvalCommand(libGAP_BottomLVars, NULL)
             if status != libGAP_STATUS_END:
                 libgap_call_error_handler()
             sig_off()
@@ -481,10 +480,10 @@ def command(command_string):
         if libGAP_ReadEvalResult:
             libGAP_ViewObjHandler(libGAP_ReadEvalResult)
             s = libgap_get_output()
-            print 'Output follows...'
-            print s.strip()
+            print('Output follows...')
+            print(s.strip())
         else:
-            print 'No output.'
+            print('No output.')
 
     finally:
         libgap_exit()

@@ -91,6 +91,7 @@ REFERENCES:
 #  Distributed under the terms of the GNU General Public License (GPL)
 #                  http://www.gnu.org/licenses/
 #**************************************************************************************
+from __future__ import print_function
 
 from sage.groups.perm_gps.permgroup import PermutationGroup, PermutationGroup_generic
 import random
@@ -565,21 +566,6 @@ class CubeGroup(PermutationGroup_generic):
         """
         return "The Rubik's cube group with generators R,L,F,B,U,D in SymmetricGroup(48)."
 
-    def group(self):
-        r"""
-        This is deprecated in trac:`11360`. Use the :class:`CubeGroup` instead.
-
-        EXAMPLES::
-
-            sage: CubeGroup().group()
-            doctest:...: DeprecationWarning: group() is deprecated. Use the CubeGroup instead.
-            See http://trac.sagemath.org/11360 for details.
-            The Rubik's cube group with generators R,L,F,B,U,D in SymmetricGroup(48).
-        """
-        from sage.misc.superseded import deprecation
-        deprecation(11360, 'group() is deprecated. Use the CubeGroup instead.')
-        return self
-
     def B(self):
         """
         Return the generator `B` in Singmaster notation.
@@ -741,8 +727,7 @@ class CubeGroup(PermutationGroup_generic):
                 state_facets = state_facets + r
             state0 = self.faces("")
             state0_facets = []
-            keyss = state0.keys()
-            keyss.sort()
+            keyss = sorted(state0.keys())
             for k in keyss:
                 r = state0[k][0]+state0[k][1]+state0[k][2]
                 r.remove(0)
@@ -860,7 +845,7 @@ class CubeGroup(PermutationGroup_generic):
                          | 46   47   24 |
                          +--------------+
         """
-        print self.repr2d(mv)
+        print(self.repr2d(mv))
 
     def repr2d(self, mv):
         r"""
@@ -870,7 +855,7 @@ class CubeGroup(PermutationGroup_generic):
         EXAMPLES::
 
             sage: rubik = CubeGroup()
-            sage: print rubik.repr2d("")
+            sage: print(rubik.repr2d(""))
                          +--------------+
                          |  1    2    3 |
                          |  4   top   5 |
@@ -887,7 +872,7 @@ class CubeGroup(PermutationGroup_generic):
 
         ::
 
-            sage: print rubik.repr2d("R")
+            sage: print(rubik.repr2d("R"))
                          +--------------+
                          |  1    2   38 |
                          |  4   top  36 |
@@ -940,7 +925,6 @@ class CubeGroup(PermutationGroup_generic):
         """
         g = self.parse(mv)
         state = self.facets(g)
-        #print state
         cubies = [create_poly(index2singmaster(state[x]), color_of_square(x+1, colors)) for x in range(48)]
         centers = [create_poly('%s_center' % "ulfrbd"[i], colors[i]) for i in range(6)]
         clrs = sum(cubies) + sum(centers)
@@ -1090,7 +1074,6 @@ class CubeGroup(PermutationGroup_generic):
 
         hom = self._gap_().EpimorphismFromFreeGroup()
         soln = hom.PreImagesRepresentative(gap(str(g)))
-        # print soln
         sol = str(soln)
         names = self.gen_names()
         for i in range(6):

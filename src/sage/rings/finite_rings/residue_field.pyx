@@ -1,5 +1,5 @@
 """
-Finite residue fields.
+Finite residue fields
 
 We can take the residue field of maximal ideals in the ring of integers
 of number fields. We can also take the residue field of irreducible
@@ -146,14 +146,13 @@ And now over a large prime field::
 #                  http://www.gnu.org/licenses/
 #*****************************************************************************
 
-include "sage/ext/stdsage.pxi"
 
-from sage.rings.field import Field
-from sage.rings.integer import Integer
-from sage.rings.rational import Rational
+from sage.rings.ring cimport Field
+from sage.rings.integer cimport Integer
+from sage.rings.rational cimport Rational
 from sage.categories.homset import Hom
 from sage.rings.all import ZZ, QQ, Integers
-from sage.rings.finite_rings.constructor import zech_log_bound, FiniteField as GF
+from sage.rings.finite_rings.finite_field_constructor import zech_log_bound, FiniteField as GF
 from sage.rings.finite_rings.finite_field_givaro import FiniteField_givaro
 from sage.rings.finite_rings.finite_field_ntl_gf2e import FiniteField_ntl_gf2e
 from sage.rings.finite_rings.finite_field_prime_modn import FiniteField_prime_modn
@@ -172,6 +171,7 @@ from sage.rings.polynomial.polynomial_ring import is_PolynomialRing
 from sage.rings.polynomial.polynomial_element import is_Polynomial
 
 from sage.structure.factory import UniqueFactory
+from sage.structure.element cimport parent_c
 
 
 class ResidueFieldFactory(UniqueFactory):
@@ -303,12 +303,12 @@ class ResidueFieldFactory(UniqueFactory):
                 #    p = p.parent().ring_of_integers().ideal(p)
                 # will eventually support other function fields here.
                 else:
-                    raise ValueError, "p must be an ideal or element of a number field or function field."
+                    raise ValueError("p must be an ideal or element of a number field or function field.")
             if not p.is_prime():
-                raise ValueError, "p (%s) must be prime"%p
+                raise ValueError("p (%s) must be prime" % p)
             if is_PolynomialRing(p.ring()):
                 if not p.ring().base_ring().is_finite():
-                    raise ValueError, "residue fields only supported for polynomial rings over finite fields"
+                    raise ValueError("residue fields only supported for polynomial rings over finite fields")
                 if not p.ring().base_ring().is_prime_field():
                     # neither of these will work over non-prime fields quite yet.  We should use relative finite field extensions.
                     raise NotImplementedError
@@ -357,7 +357,7 @@ class ResidueFieldFactory(UniqueFactory):
                 elif impl is None or impl == 'pari':
                     return ResidueFiniteField_pari_ffelt(p, characteristic, names, f, None, None, None)
                 else:
-                    raise ValueError, "unrecognized finite field type"
+                    raise ValueError("unrecognized finite field type")
 
         # Should generalize to allowing residue fields of relative extensions to be extensions of finite fields.
         if is_NumberFieldIdeal(p):
@@ -416,7 +416,7 @@ class ResidueFieldFactory(UniqueFactory):
             elif impl is None or impl == 'pari':
                 return ResidueFiniteField_pari_ffelt(p, characteristic, names, f, to_vs, to_order, PB)
             else:
-                raise ValueError, "unrecognized finite field type"
+                raise ValueError("unrecognized finite field type")
 
 ResidueField = ResidueFieldFactory("ResidueField")
 
@@ -542,16 +542,11 @@ class ResidueField_generic(Field):
             4
         """
         K = OK = self.p.ring()
+        R = parent_c(x)
         if OK.is_field():
             OK = OK.ring_of_integers()
         else:
             K = K.fraction_field()
-        if PY_TYPE_CHECK(x, Element):
-            R = (<Element>x)._parent
-        elif hasattr(x, 'parent'):
-            R = x.parent()
-        else:
-            R = type(x)
         if OK.has_coerce_map_from(R):
             x = OK(x)
         elif K.has_coerce_map_from(R):
@@ -560,7 +555,7 @@ class ResidueField_generic(Field):
             try:
                 x = K(x)
             except (TypeError, ValueError):
-                raise TypeError, "cannot coerce %s"%type(x)
+                raise TypeError("cannot coerce %s" % type(x))
         return self(x)
 
     def _coerce_map_from_(self, R):
@@ -965,7 +960,7 @@ cdef class ReductionMap(Map):
             try:
                 return FiniteField_prime_modn._element_constructor_(self._F, x)
             except ZeroDivisionError:
-                raise ZeroDivisionError, "Cannot reduce rational %s modulo %s: it has negative valuation"%(x,p.gen())
+                raise ZeroDivisionError("Cannot reduce rational %s modulo %s: it has negative valuation" % (x, p.gen()))
         elif is_FractionField(self._K):
             p = p.gen()
             if p.degree() == 1:
@@ -988,7 +983,7 @@ cdef class ReductionMap(Map):
         if vnx > vdx:
             return self(0)
         if vnx < vdx:
-            raise ZeroDivisionError, "Cannot reduce field element %s modulo %s: it has negative valuation"%(x,p)
+            raise ZeroDivisionError("Cannot reduce field element %s modulo %s: it has negative valuation" % (x, p))
 
         a = self._K.uniformizer(p,'negative') ** vnx
         nx /= a
@@ -996,7 +991,7 @@ cdef class ReductionMap(Map):
         # Assertions for debugging!
         # assert nx.valuation(p) == 0 and dx.valuation(p) == 0 and x == nx/dx
         # assert nx.is_integral() and dx.is_integral()
-        # print "nx = ",nx,"; dx = ",dx, ": recursing"
+        # print("nx = ",nx,"; dx = ",dx, ": recursing")
 
         # NB at this point nx and dx are in the ring of integers and
         # both are p-units.  Recursion is now safe, since integral
@@ -1744,7 +1739,7 @@ class ResidueFiniteField_givaro(ResidueField_generic, FiniteField_givaro):
 
     def _element_constructor_(self, x):
         """
-        INPUT::
+        INPUT:
 
             - ``x`` -- Something to cast into ``self``.
 
