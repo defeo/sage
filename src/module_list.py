@@ -1325,10 +1325,9 @@ ext_modules = [
                          'sage/rings/ff_compositum/nmod_poly_to_newton_sums.c',
                          'sage/rings/ff_compositum/nmod_poly_trem.c'],
               libraries = ['flint', 'm'],
-              depends = flint_depends + 
-              ['sage/rings/ff_compositum/compositum.h',
-               'sage/rings/ff_compositum/nmod_poly_extra.h',
-               'sage/rings/ff_compositum/nmod_poly_mat_extra.h']),
+              depends = ['sage/rings/ff_compositum/compositum.h',
+                         'sage/rings/ff_compositum/nmod_poly_extra.h',
+                         'sage/rings/ff_compositum/nmod_poly_mat_extra.h']),
 
     Extension('sage.rings.integer',
               sources = ['sage/rings/integer.pyx'],
